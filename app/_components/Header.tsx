@@ -13,6 +13,14 @@ const menuOptions = [
     path: "/",
   },
   {
+    name: "Discover",
+    path: "/discover",
+  },
+  {
+    name: "Reviews",
+    path: "/reviews",
+  },
+  {
     name: "Pricing",
     path: "/pricing",
   },
@@ -25,7 +33,6 @@ const menuOptions = [
 function Header() {
   const { user } = useUser();
   const path = usePathname();
-  console.log(path);
 
   return (
     <div className="flex justify-between items-center p-4">
@@ -49,11 +56,20 @@ function Header() {
             <Button>Get Started</Button>
           </SignInButton>
         ) : (
-          path=='/create-new-trip' ?<Link href={"/my-trips"}>
-            <Button className="cursor-pointer">My Trip</Button>
-          </Link>:<Link href={"/create-new-trip"}>
-            <Button className="cursor-pointer">Create New Trip</Button>
-          </Link>
+          <>
+            {path !== "/create-new-trip" && (
+              <Link href={"/create-new-trip"}>
+                <Button className="cursor-pointer">Create New Trip</Button>
+              </Link>
+            )}
+            {path !== "/my-trips" && (
+              <Link href={"/my-trips"}>
+                <Button variant="outline" className="cursor-pointer">
+                  My Trip
+                </Button>
+              </Link>
+            )}
+          </>
         )}
         <UserButton />
       </div>
