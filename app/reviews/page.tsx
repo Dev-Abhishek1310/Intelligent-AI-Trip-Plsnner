@@ -1,90 +1,22 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Star, MapPin, ThumbsUp, User } from "lucide-react";
 
 type Review = {
-  id: string;
+  _id: string;
   author: string;
   avatarInitial: string;
   destination: string;
   rating: number;
   title: string;
   body: string;
-  date: string;
+  createdAt: string;
   helpful: number;
   tripType?: string;
 };
-
-const SEED_REVIEWS: Review[] = [
-  {
-    id: "r1",
-    author: "Priya S.",
-    avatarInitial: "P",
-    destination: "Bali, Indonesia",
-    rating: 5,
-    title: "A magical honeymoon escape",
-    body:
-      "The beaches in Uluwatu were beyond stunning, and our private villa in Ubud came with its own rice-field view. Loved the temple tours at sunrise — highly recommend adding Tanah Lot to your itinerary.",
-    date: "March 2026",
-    helpful: 128,
-    tripType: "Couple",
-  },
-  {
-    id: "r2",
-    author: "Marcus L.",
-    avatarInitial: "M",
-    destination: "Tokyo, Japan",
-    rating: 5,
-    title: "Best food trip of my life",
-    body:
-      "Every single meal was an event — from tuna auctions at Toyosu to ramen at 2am in Shinjuku. Public transit is flawless. Don't miss teamLab Planets.",
-    date: "February 2026",
-    helpful: 96,
-    tripType: "Solo",
-  },
-  {
-    id: "r3",
-    author: "Aisha R.",
-    avatarInitial: "A",
-    destination: "Santorini, Greece",
-    rating: 4,
-    title: "Stunning views, bring sunscreen",
-    body:
-      "Oia at sunset is every bit as magical as the photos. Rent an ATV for the day to explore the southern beaches. Only dropped a star because restaurants in Fira were tourist-priced.",
-    date: "January 2026",
-    helpful: 74,
-    tripType: "Friends",
-  },
-  {
-    id: "r4",
-    author: "Daniel K.",
-    avatarInitial: "D",
-    destination: "Swiss Alps, Switzerland",
-    rating: 5,
-    title: "Winter wonderland, truly",
-    body:
-      "We based ourselves in Zermatt and took the Gornergrat railway daily. The views of the Matterhorn are worth every franc. Family-friendly slopes were a hit with the kids.",
-    date: "December 2025",
-    helpful: 152,
-    tripType: "Family",
-  },
-  {
-    id: "r5",
-    author: "Sophia M.",
-    avatarInitial: "S",
-    destination: "Paris, France",
-    rating: 4,
-    title: "Charming but crowded",
-    body:
-      "Loved every café and the Musée d'Orsay was the highlight for me. Book the Eiffel Tower summit well in advance or go for the Trocadéro view instead. Stayed near Le Marais — great call.",
-    date: "November 2025",
-    helpful: 61,
-    tripType: "Solo",
-  },
-];
 
 function StarRow({ value, onChange }: { value: number; onChange?: (v: number) => void }) {
   return (
@@ -93,9 +25,8 @@ function StarRow({ value, onChange }: { value: number; onChange?: (v: number) =>
         <Star
           key={i}
           onClick={() => onChange?.(i)}
-          className={`w-4 h-4 ${onChange ? "cursor-pointer" : ""} ${
-            i <= value ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-          }`}
+          className={`w-4 h-4 ${onChange ? "cursor-pointer" : ""} ${i <= value ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+            }`}
         />
       ))}
     </div>
@@ -103,7 +34,8 @@ function StarRow({ value, onChange }: { value: number; onChange?: (v: number) =>
 }
 
 export default function ReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>(SEED_REVIEWS);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
   const [minRating, setMinRating] = useState<number>(0);
   const [search, setSearch] = useState<string>("");
 
@@ -115,6 +47,24 @@ export default function ReviewsPage() {
     body: "",
   });
   const [showForm, setShowForm] = useState(false);
+  const [posting, setPosting] = useState(false);
+
+  const loadReviews = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/reviews");
+      const data = await res.json();
+      setReviews(data.reviews || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadReviews();
+  }, []);
 
   const filtered = useMemo(() => {
     return reviews.filter((r) => {
@@ -136,29 +86,42 @@ export default function ReviewsPage() {
       ? 0
       : reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.author.trim() || !form.destination.trim() || !form.title.trim() || !form.body.trim())
       return;
-    const newReview: Review = {
-      id: `r${Date.now()}`,
-      author: form.author,
-      avatarInitial: form.author.charAt(0).toUpperCase(),
-      destination: form.destination,
-      rating: form.rating,
-      title: form.title,
-      body: form.body,
-      date: new Date().toLocaleString("en-US", { month: "long", year: "numeric" }),
-      helpful: 0,
-    };
-    setReviews((prev) => [newReview, ...prev]);
-    setForm({ author: "", destination: "", rating: 5, title: "", body: "" });
-    setShowForm(false);
+    setPosting(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        const { review } = await res.json();
+        setReviews((prev) => [review, ...prev]);
+        setForm({ author: "", destination: "", rating: 5, title: "", body: "" });
+        setShowForm(false);
+      }
+    } finally {
+      setPosting(false);
+    }
   };
 
-  const markHelpful = (id: string) => {
-    setReviews((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, helpful: r.helpful + 1 } : r))
-    );
+  const markHelpful = async (id: string) => {
+    const res = await fetch(`/api/reviews/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "helpful" }),
+    });
+    if (res.ok) {
+      const { review } = await res.json();
+      setReviews((prev) => prev.map((r) => (r._id === id ? review : r)));
+    }
+  };
+
+  const formatDate = (iso: string) => {
+    if (!iso) return "";
+    return new Date(iso).toLocaleString("en-US", { month: "long", year: "numeric" });
   };
 
   return (
@@ -225,7 +188,9 @@ export default function ReviewsPage() {
             className="mt-4 h-28"
           />
           <div className="mt-4 flex justify-end">
-            <Button onClick={submit}>Post Review</Button>
+            <Button onClick={submit} disabled={posting}>
+              {posting ? "Posting..." : "Post Review"}
+            </Button>
           </div>
         </div>
       )}
@@ -249,49 +214,53 @@ export default function ReviewsPage() {
         </select>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {filtered.map((r) => (
-          <div
-            key={r.id}
-            className="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md transition"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center shrink-0">
-                {r.avatarInitial || <User className="w-5 h-5" />}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div>
-                    <div className="font-semibold">{r.author}</div>
-                    <div className="text-xs text-gray-500 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" /> {r.destination}
-                      {r.tripType && <span className="ml-2">• {r.tripType}</span>}
+      {loading ? (
+        <div className="text-center text-gray-500 py-12">Loading reviews...</div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {filtered.map((r) => (
+            <div
+              key={r._id}
+              className="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md transition"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center shrink-0">
+                  {r.avatarInitial || <User className="w-5 h-5" />}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <div className="font-semibold">{r.author}</div>
+                      <div className="text-xs text-gray-500 flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> {r.destination}
+                        {r.tripType && <span className="ml-2">• {r.tripType}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <StarRow value={r.rating} />
+                      <span className="text-xs text-gray-500">{formatDate(r.createdAt)}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <StarRow value={r.rating} />
-                    <span className="text-xs text-gray-500">{r.date}</span>
-                  </div>
+                  <h3 className="font-semibold mt-3">{r.title}</h3>
+                  <p className="text-sm text-gray-700 mt-1">{r.body}</p>
+                  <button
+                    onClick={() => markHelpful(r._id)}
+                    className="mt-3 flex items-center gap-1 text-xs text-gray-500 hover:text-primary"
+                  >
+                    <ThumbsUp className="w-3 h-3" /> Helpful ({r.helpful})
+                  </button>
                 </div>
-                <h3 className="font-semibold mt-3">{r.title}</h3>
-                <p className="text-sm text-gray-700 mt-1">{r.body}</p>
-                <button
-                  onClick={() => markHelpful(r.id)}
-                  className="mt-3 flex items-center gap-1 text-xs text-gray-500 hover:text-primary"
-                >
-                  <ThumbsUp className="w-3 h-3" /> Helpful ({r.helpful})
-                </button>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {filtered.length === 0 && (
-          <div className="text-center text-gray-500 py-12">
-            No reviews match your filters.
-          </div>
-        )}
-      </div>
+          {filtered.length === 0 && (
+            <div className="text-center text-gray-500 py-12">
+              No reviews match your filters.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

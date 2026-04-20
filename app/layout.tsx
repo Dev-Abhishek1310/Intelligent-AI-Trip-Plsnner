@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "Intelligent trip planner that generates personalized itineraries based on user preferences and constraints.",
 };
 
-const outfit=Outfit({subsets:['latin']})
+const outfit = Outfit({ subsets: ['latin'] })
 
 export default function RootLayout({
   children,
@@ -21,15 +21,15 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-    <html lang="en">
-      <body
-       className={outfit.className}
-      >
-        <ConvexClientProvider>
-        {children}
-        </ConvexClientProvider>
-      </body>
-    </html>
+      <html lang="en">
+        <body
+          className={outfit.className}
+        >
+          <ConvexClientProvider>
+            {children}
+          </ConvexClientProvider>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }

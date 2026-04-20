@@ -22,20 +22,19 @@ function SelectItineraryUi({ options, onSelect, disabled }: Props) {
         const isSelected = selectedIdx === idx;
         const highlights = Array.isArray(opt.itinerary)
           ? opt.itinerary
-              .slice(0, 2)
-              .flatMap((d) => (d?.activities ?? []).slice(0, 2).map((a) => a?.place_name))
-              .filter(Boolean)
+            .slice(0, 2)
+            .flatMap((d) => (d?.activities ?? []).slice(0, 2).map((a) => a?.place_name))
+            .filter(Boolean)
           : [];
 
         return (
           <div
             key={idx}
             onClick={() => !disabled && setSelectedIdx(idx)}
-            className={`rounded-xl border p-4 cursor-pointer transition ${
-              isSelected
+            className={`rounded-xl border p-4 cursor-pointer transition ${isSelected
                 ? "border-primary ring-2 ring-primary bg-primary/5"
                 : "border-gray-200 hover:border-primary/50"
-            } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+              } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -87,7 +86,6 @@ function SelectItineraryUi({ options, onSelect, disabled }: Props) {
         ) : selectedIdx === null ? (
           "Select an itinerary above"
         ) : (
-            
           "Use this itinerary"
         )}
       </Button>

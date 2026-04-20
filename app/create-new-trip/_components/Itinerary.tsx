@@ -3,6 +3,8 @@
 import { Timeline } from "@/components/ui/timeline";
 import HotelCardItem from "./HotelCardItem";
 import PlaceCardItem from "./PlaceCardItem";
+import BudgetBreakdown from "./BudgetBreakdown";
+import TripEssentials from "./TripEssentials";
 import { useTripDetail } from "@/app/provider";
 import { TripInfo, Itinerary as ItineraryType } from "./ChatBox";
 import { useEffect, useState } from "react";
@@ -30,35 +32,43 @@ export default function Itinerary() {
   // Prepare timeline items
   const data = tripData
     ? [
-        {
-          title: "Recommended Hotels",
-          content: (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tripData.hotels.map((hotel) => (
-                <HotelCardItem key={hotel.hotel_name} hotel={hotel} />
+      {
+        title: "Budget Breakdown",
+        content: <BudgetBreakdown trip={tripData} />,
+      },
+      {
+        title: "Trip Essentials",
+        content: <TripEssentials trip={tripData} />,
+      },
+      {
+        title: "Recommended Hotels",
+        content: (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {tripData.hotels.map((hotel) => (
+              <HotelCardItem key={hotel.hotel_name} hotel={hotel} />
+            ))}
+          </div>
+        ),
+      },
+      ...itineraryArray.map((dayData) => ({
+        title: `Day ${dayData.day}`,
+        content: (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm font-medium">
+              Best Time: {dayData.best_time_to_visit}
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              {dayData.activities.map((activity) => (
+                <PlaceCardItem
+                  key={activity.place_name}
+                  activity={activity}
+                />
               ))}
             </div>
-          ),
-        },
-        ...itineraryArray.map((dayData) => ({
-          title: `Day ${dayData.day}`,
-          content: (
-            <div className="flex flex-col gap-4">
-              <p className="text-sm font-medium">
-                Best Time: {dayData.best_time_to_visit}
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                {dayData.activities.map((activity) => (
-                  <PlaceCardItem
-                    key={activity.place_name}
-                    activity={activity}
-                  />
-                ))}
-              </div>
-            </div>
-          ),
-        })),
-      ]
+          </div>
+        ),
+      })),
+    ]
     : [];
 
   return (

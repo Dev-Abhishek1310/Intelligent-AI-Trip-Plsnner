@@ -37,6 +37,30 @@ export type TripInfo = {
   itinerary: Itinerary[]; // ✅ changed to array
   theme?: string;
   summary?: string;
+  flights?: Flight[];
+  booking?: Booking;
+};
+
+export type Flight = {
+  airline: string;
+  flight_number?: string;
+  from_airport: string;
+  to_airport: string;
+  departure_time: string;
+  arrival_time: string;
+  duration: string;
+  stops: number;
+  price: string;
+  cabin?: string;
+  booking_url?: string;
+};
+
+export type Booking = {
+  estimated_flight_cost?: string;
+  estimated_hotel_cost?: string;
+  estimated_total?: string;
+  currency?: string;
+  notes?: string;
 };
 
 
@@ -124,8 +148,8 @@ const ChatBox = () => {
         const plans: TripInfo[] = Array.isArray(result?.data?.trip_plans)
           ? result.data.trip_plans
           : result?.data?.trip_plan
-          ? [result.data.trip_plan]
-          : [];
+            ? [result.data.trip_plan]
+            : [];
 
         console.log("Final plans received:", plans.length, plans);
 
@@ -312,7 +336,11 @@ const ChatBox = () => {
     setTripDetailInfo(null);
 
     const preDestination = searchParams?.get("destination");
-    if (preDestination) {
+    const prePrompt = searchParams?.get("prompt");
+
+    if (prePrompt) {
+      onSend(prePrompt);
+    } else if (preDestination) {
       setMessages([
         {
           role: "user",
@@ -402,16 +430,16 @@ const ChatBox = () => {
 
       {/* Input */}
       <section>
-        <div className="border rounded-2xl p-4 relative">
+        <div className="border rounded-2xl p-3 relative">
           <Textarea
             placeholder="Create a trip from Paris to New York"
-            className="w-full h-28 bg-transparent border-none focus-visible:ring-0 shadow-none resize-none"
+            className="w-full h-14 bg-transparent border-none focus-visible:ring-0 shadow-none resize-none pr-12"
             onChange={(event) => setUserInput(event.target.value)}
             value={userInput}
           />
           <Button
             size="icon"
-            className="absolute bottom-6 right-6"
+            className="absolute bottom-3 right-3"
             onClick={() => onSend()}
             disabled={loading}
           >

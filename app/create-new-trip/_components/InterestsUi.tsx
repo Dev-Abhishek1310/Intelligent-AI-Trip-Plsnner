@@ -74,11 +74,10 @@ function InterestsUi({
           return (
             <div
               key={item.id}
-              className={`flex flex-col items-center text-center p-4 border rounded-xl shadow-sm transition cursor-pointer bg-white ${
-                isActive
+              className={`flex flex-col items-center text-center p-4 border rounded-xl shadow-sm transition cursor-pointer bg-white ${isActive
                   ? "border-primary ring-2 ring-primary"
                   : "hover:shadow-md hover:border-primary"
-              }`}
+                }`}
               onClick={() => toggle(item.title)}
             >
               <div

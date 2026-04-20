@@ -19,50 +19,48 @@ import BudgetBreakdown from "@/app/create-new-trip/_components/BudgetBreakdown";
 import TripEssentials from "@/app/create-new-trip/_components/TripEssentials";
 import HotelCardItem from "@/app/create-new-trip/_components/HotelCardItem";
 import PlaceCardItem from "@/app/create-new-trip/_components/PlaceCardItem";
+import FlightsSection from "./FlightsSection";
+import BookingSummary from "./BookingSummary";
 
 function buildNarrative(trip: TripInfo): string {
   const days = parseInt(trip.duration || "0", 10) || 0;
   const hotels = Array.isArray(trip.hotels) ? trip.hotels.length : 0;
   const activitiesCount = Array.isArray(trip.itinerary)
     ? trip.itinerary.reduce(
-        (sum, d) => sum + (Array.isArray(d.activities) ? d.activities.length : 0),
-        0
-      )
+      (sum, d) => sum + (Array.isArray(d.activities) ? d.activities.length : 0),
+      0
+    )
     : 0;
 
   const highlights = Array.isArray(trip.itinerary)
     ? trip.itinerary
-        .flatMap((d) =>
-          (Array.isArray(d.activities) ? d.activities : [])
-            .slice(0, 1)
-            .map((a) => a.place_name)
-        )
-        .filter(Boolean)
-        .slice(0, 3)
+      .flatMap((d) =>
+        (Array.isArray(d.activities) ? d.activities : [])
+          .slice(0, 1)
+          .map((a) => a.place_name)
+      )
+      .filter(Boolean)
+      .slice(0, 3)
     : [];
 
   const highlightText =
     highlights.length > 0
       ? ` You'll experience ${highlights
-          .map((h, i) =>
-            i === highlights.length - 1 && highlights.length > 1
-              ? `and ${h}`
-              : h
-          )
-          .join(highlights.length > 2 ? ", " : " ")}.`
+        .map((h, i) =>
+          i === highlights.length - 1 && highlights.length > 1
+            ? `and ${h}`
+            : h
+        )
+        .join(highlights.length > 2 ? ", " : " ")}.`
       : "";
 
-  return `This ${days}-day journey takes you from ${
-    trip.origin || "your origin"
-  } to ${
-    trip.destination || "your destination"
-  }, planned for a ${(trip.group_size || "").toLowerCase() || "traveler"} with a ${(
-    trip.budget || ""
-  ).toLowerCase() || "flexible"} budget. We've shortlisted ${hotels} place${
-    hotels === 1 ? "" : "s"
-  } to stay and curated ${activitiesCount} experience${
-    activitiesCount === 1 ? "" : "s"
-  } across your itinerary.${highlightText}`;
+  return `This ${days}-day journey takes you from ${trip.origin || "your origin"
+    } to ${trip.destination || "your destination"
+    }, planned for a ${(trip.group_size || "").toLowerCase() || "traveler"} with a ${(
+      trip.budget || ""
+    ).toLowerCase() || "flexible"} budget. We've shortlisted ${hotels} place${hotels === 1 ? "" : "s"
+    } to stay and curated ${activitiesCount} experience${activitiesCount === 1 ? "" : "s"
+    } across your itinerary.${highlightText}`;
 }
 
 export default function TripDetailView({ trip }: { trip: TripInfo }) {
@@ -103,6 +101,12 @@ export default function TripDetailView({ trip }: { trip: TripInfo }) {
         <h2 className="text-2xl font-semibold mb-3">About this trip</h2>
         <p className="text-gray-700 leading-relaxed text-[15px]">{narrative}</p>
       </section>
+
+      {/* Booking summary — flights + hotels + activities in one place */}
+      <BookingSummary trip={trip} />
+
+      {/* Flights */}
+      <FlightsSection trip={trip} />
 
       {/* Budget + Essentials side-by-side */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">

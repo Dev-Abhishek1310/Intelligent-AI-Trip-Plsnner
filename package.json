@@ -24,6 +24,7 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^0.536.0",
     "mapbox-gl": "^3.14.0",
+    "mongoose": "^8.23.0",
     "motion": "^12.23.12",
     "next": "^14.0.0",
     "openai": "^5.12.2",

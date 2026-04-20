@@ -228,11 +228,10 @@ export default function TripEssentials({ trip }: { trip: TripInfo }) {
               <button
                 key={item}
                 onClick={() => toggle(item)}
-                className={`flex items-center gap-2 p-2 border rounded-lg text-sm text-left transition ${
-                  isChecked
+                className={`flex items-center gap-2 p-2 border rounded-lg text-sm text-left transition ${isChecked
                     ? "bg-primary/5 border-primary/30 text-gray-500 line-through"
                     : "bg-white hover:border-primary/50"
-                }`}
+                  }`}
               >
                 {isChecked ? (
                   <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
@@ -262,9 +261,8 @@ function FactRow({
 }) {
   return (
     <div
-      className={`flex items-start gap-2 p-2 border rounded-lg ${
-        wide ? "sm:col-span-2" : ""
-      }`}
+      className={`flex items-start gap-2 p-2 border rounded-lg ${wide ? "sm:col-span-2" : ""
+        }`}
     >
       <Icon className="w-4 h-4 text-gray-500 mt-0.5 shrink-0" />
       <div className="min-w-0">

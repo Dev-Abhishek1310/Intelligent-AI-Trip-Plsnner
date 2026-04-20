@@ -58,7 +58,7 @@ You are an AI Trip Planner Agent.
 
 All required trip details have been collected. Generate **exactly 3 distinct, complete trip plans** for the same origin, destination, duration, group size, and budget — so the user can choose one.
 
-Use these two themes in order, and set each plan's "theme" field to match EXACTLY:
+Use these three themes in order, and set each plan's "theme" field to match EXACTLY:
   1. "Adventure & Outdoors"  — active, outdoor, adrenaline
   2. "Culture & Cuisine"     — history, landmarks, museums, local food
   3. "Relaxed & Scenic"      — slower pace, scenic views, iconic sights
@@ -110,7 +110,29 @@ Each plan must have a clearly different set of hotels and activities (no repeati
             }
           ]
         }
-      ]
+      ],
+      "flights": [
+        {
+          "airline": "string",
+          "flight_number": "string",
+          "from_airport": "string (IATA or city)",
+          "to_airport": "string (IATA or city)",
+          "departure_time": "string (HH:mm)",
+          "arrival_time": "string (HH:mm)",
+          "duration": "string (e.g. 8h 20m)",
+          "stops": number,
+          "price": "string (e.g. $540)",
+          "cabin": "Economy | Premium Economy | Business",
+          "booking_url": "string (optional, any public search URL)"
+        }
+      ],
+      "booking": {
+        "estimated_flight_cost": "string (e.g. $620 per person)",
+        "estimated_hotel_cost": "string (e.g. $840 total)",
+        "estimated_total": "string (e.g. $2,150 total)",
+        "currency": "USD",
+        "notes": "string — any booking tips or caveats"
+      }
     }
   ]
 }
@@ -118,6 +140,8 @@ Each plan must have a clearly different set of hotels and activities (no repeati
 Rules:
 - Top-level "trip_plans" array MUST have exactly 3 items in the theme order above.
 - Every key must be present. No extra fields.
+- "flights": include exactly 3 realistic flight options per plan (non-stop, 1-stop, budget) with plausible real airlines.
+- "booking": provide realistic per-person flight cost and total estimated trip cost aligned with the plan's budget tier.
 `;
 
 type Message = {
@@ -159,7 +183,7 @@ export async function POST(req: NextRequest) {
           ...messages,
         ],
       });
-      return completion.choices[0].message.content ?? "";
+      return completion.choices?.[0]?.message?.content ?? "";
     };
 
     let raw = await callModel();
