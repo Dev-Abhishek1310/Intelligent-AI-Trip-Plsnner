@@ -58,7 +58,7 @@ You are an AI Trip Planner Agent.
 
 All required trip details have been collected. Generate **exactly 3 distinct, complete trip plans** for the same origin, destination, duration, group size, and budget — so the user can choose one.
 
-Use these three themes in order, and set each plan's "theme" field to match EXACTLY:
+Use these two themes in order, and set each plan's "theme" field to match EXACTLY:
   1. "Adventure & Outdoors"  — active, outdoor, adrenaline
   2. "Culture & Cuisine"     — history, landmarks, museums, local food
   3. "Relaxed & Scenic"      — slower pace, scenic views, iconic sights
@@ -138,13 +138,13 @@ export async function POST(req: NextRequest) {
     requested: isFinal ? 5 : 0,
   });
 
-// @ts-ignore
-if (decision?.reason?.remaining === 0 && !hasPremiumAccess) {
-  return NextResponse.json({
-    resp: "Your daily limit has been reached",
-    ui: "limit",
-  });
-}
+  // @ts-ignore
+  if (decision?.reason?.remaining === 0 && !hasPremiumAccess) {
+    return NextResponse.json({
+      resp: "Your daily limit has been reached",
+      ui: "limit",
+    });
+  }
 
 
 
@@ -250,21 +250,21 @@ if (decision?.reason?.remaining === 0 && !hasPremiumAccess) {
     }
 
     // Count only AI messages
-const aiMessagesCount = messages.filter((msg: Message) => msg.role === "assistant").length;
+    const aiMessagesCount = messages.filter((msg: Message) => msg.role === "assistant").length;
 
 
-if (isFinal) {
-  // Normalize: accept { trip_plans: [...] } (expected) or legacy { trip_plan: {...} }.
-  if (!Array.isArray(content?.trip_plans)) {
-    if (content?.trip_plan) {
-      content.trip_plans = [content.trip_plan];
-    } else {
-      content.trip_plans = [];
+    if (isFinal) {
+      // Normalize: accept { trip_plans: [...] } (expected) or legacy { trip_plan: {...} }.
+      if (!Array.isArray(content?.trip_plans)) {
+        if (content?.trip_plan) {
+          content.trip_plans = [content.trip_plan];
+        } else {
+          content.trip_plans = [];
+        }
+      }
+      content.resp = "I've prepared 3 itinerary options — pick the one you like best.";
+      content.ui = "selectItinerary";
     }
-  }
-  content.resp = "I've prepared 3 itinerary options — pick the one you like best.";
-  content.ui = "selectItinerary";
-}
 
 
     // Remove any embedded UI hints in response
