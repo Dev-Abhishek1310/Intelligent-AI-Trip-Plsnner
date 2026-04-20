@@ -1,9 +1,11 @@
 'use client'
 
 import React, { useState } from 'react'
+import dynamic from 'next/dynamic';
 import ChatBox from './_components/ChatBox';
 import Itinerary from './_components/Itinerary';
-import GlobalMap from './_components/GlobalMap';
+
+const GlobalMap = dynamic(() => import('./_components/GlobalMap'), { ssr: false });
 import { Button } from '@/components/ui/button';
 import { Globe2, Plane } from 'lucide-react';
 import {

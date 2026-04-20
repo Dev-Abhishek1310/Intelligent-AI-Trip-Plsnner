@@ -56,26 +56,25 @@ Rules:
 const ALL_PLANS_PROMPT = `
 You are an AI Trip Planner Agent.
 
-All required trip details have been collected. Generate **exactly 3 distinct, complete trip plans** for the same origin, destination, duration, group size, and budget — so the user can choose one.
+All required trip details have been collected. Generate exactly 3 distinct trip plans for the same trip so the user can choose one.
 
-Use these three themes in order, and set each plan's "theme" field to match EXACTLY:
-  1. "Adventure & Outdoors"  — active, outdoor, adrenaline
-  2. "Culture & Cuisine"     — history, landmarks, museums, local food
-  3. "Relaxed & Scenic"      — slower pace, scenic views, iconic sights
+Themes (use exactly these strings in the "theme" field):
+1. "Adventure & Outdoors"
+2. "Culture & Cuisine"
+3. "Relaxed & Scenic"
 
-Each plan must have a clearly different set of hotels and activities (no repeating places across plans).
+Rules:
+- Return ONLY valid JSON matching the schema. No markdown, no comments, no extra keys.
+- Use "TBD" or 0 for any unknown values.
+- Each plan: 2 hotels, itinerary days matching the trip duration (max 5 days), 2 activities per day, 2 flight options.
+- No repeated hotels or activities across plans.
 
-⚠️ Very Important:
-- Return ONLY a valid JSON object matching the schema below.
-- No markdown, no comments, no extra keys.
-- Use "TBD" or 0 if data is missing.
-
-### Schema:
+Schema:
 {
   "trip_plans": [
     {
       "theme": "string",
-      "summary": "string — one short sentence describing the vibe",
+      "summary": "string",
       "destination": "string",
       "duration": "string",
       "origin": "string",
@@ -86,24 +85,20 @@ Each plan must have a clearly different set of hotels and activities (no repeati
           "hotel_name": "string",
           "hotel_address": "string",
           "price_per_night": "string",
-          "hotel_image_url": "string",
-          "geo_coordinates": { "latitude": number, "longitude": number },
-          "rating": number,
-          "description": "string"
+          "rating": number
         }
       ],
       "itinerary": [
         {
           "day": number,
           "day_plan": "string",
-          "best_time_to_visit_day": "string",
+          "best_time_to_visit": "string",
           "activities": [
             {
               "place_name": "string",
               "place_details": "string",
-              "place_image_url": "string",
-              "geo_coordinates": { "latitude": number, "longitude": number },
               "place_address": "string",
+              "geo_coordinates": { "latitude": number, "longitude": number },
               "ticket_pricing": "string",
               "time_travel_each_location": "string",
               "best_time_to_visit": "string"
@@ -115,33 +110,25 @@ Each plan must have a clearly different set of hotels and activities (no repeati
         {
           "airline": "string",
           "flight_number": "string",
-          "from_airport": "string (IATA or city)",
-          "to_airport": "string (IATA or city)",
-          "departure_time": "string (HH:mm)",
-          "arrival_time": "string (HH:mm)",
-          "duration": "string (e.g. 8h 20m)",
+          "from_airport": "string",
+          "to_airport": "string",
+          "departure_time": "string",
+          "arrival_time": "string",
+          "duration": "string",
           "stops": number,
-          "price": "string (e.g. $540)",
-          "cabin": "Economy | Premium Economy | Business",
-          "booking_url": "string (optional, any public search URL)"
+          "price": "string",
+          "cabin": "Economy"
         }
       ],
       "booking": {
-        "estimated_flight_cost": "string (e.g. $620 per person)",
-        "estimated_hotel_cost": "string (e.g. $840 total)",
-        "estimated_total": "string (e.g. $2,150 total)",
-        "currency": "USD",
-        "notes": "string — any booking tips or caveats"
+        "estimated_flight_cost": "string",
+        "estimated_hotel_cost": "string",
+        "estimated_total": "string",
+        "notes": "string"
       }
     }
   ]
 }
-
-Rules:
-- Top-level "trip_plans" array MUST have exactly 3 items in the theme order above.
-- Every key must be present. No extra fields.
-- "flights": include exactly 3 realistic flight options per plan (non-stop, 1-stop, budget) with plausible real airlines.
-- "booking": provide realistic per-person flight cost and total estimated trip cost aligned with the plan's budget tier.
 `;
 
 type Message = {
@@ -173,11 +160,34 @@ export async function POST(req: NextRequest) {
 
 
 
+  const parseRaw = (raw: string): any => {
+    let clean = raw
+      .replace(/<\|.*?\|>/g, "")
+      .replace(/```json\s*/gi, "")
+      .replace(/```\s*$/g, "")
+      .replace(/^(final\s*json|json|final|assistantfinal)[:\s]*/gi, "")
+      .trim();
+    const m = clean.match(/\{[\s\S]*\}/);
+    if (m) clean = m[0];
+    try {
+      return JSON.parse(clean);
+    } catch {
+      // Model returned malformed JSON — try to salvage resp and ui via regex.
+      const respMatch = clean.match(/"resp"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+      const uiMatch = clean.match(/"ui"\s*:\s*"([^"]+)"/);
+      return {
+        resp: respMatch ? respMatch[1].replace(/\\n/g, " ").replace(/\\"/g, '"') : "",
+        ui: uiMatch ? uiMatch[1] : "",
+      };
+    }
+  };
+
   try {
     const callModel = async () => {
       const completion = await openai.chat.completions.create({
         model: "openai/gpt-oss-20b:free",
         response_format: { type: "json_object" },
+        max_tokens: isFinal ? 4000 : 300,
         messages: [
           { role: "system", content: isFinal ? ALL_PLANS_PROMPT : PROMPT },
           ...messages,
@@ -196,23 +206,7 @@ export async function POST(req: NextRequest) {
       console.log("[aimodel] raw-retry:", JSON.stringify(raw).slice(0, 300));
     }
 
-    let cleanMessage = raw
-      .replace(/<\|.*?\|>/g, "")
-      .replace(/```json\s*/gi, "")
-      .replace(/```\s*$/g, "")
-      .replace(/^(final\s*json|json|final|assistantfinal)[:\s]*/gi, "")
-      .trim();
-
-    // Extract JSON if wrapped
-    const jsonMatch = cleanMessage.match(/\{[\s\S]*\}/);
-    if (jsonMatch) cleanMessage = jsonMatch[0];
-
-    let content: any;
-    try {
-      content = JSON.parse(cleanMessage);
-    } catch {
-      content = { resp: cleanMessage || "", ui: "" };
-    }
+    let content: any = parseRaw(raw);
 
     const ALLOWED_UIS = [
       "source",
@@ -286,6 +280,21 @@ export async function POST(req: NextRequest) {
           content.trip_plans = [];
         }
       }
+
+      // Free models often truncate large JSON responses — retry once if no plans parsed.
+      if (content.trip_plans.length === 0) {
+        console.warn("[aimodel] isFinal: no trip_plans found, retrying…");
+        const retryRaw = await callModel();
+        console.log("[aimodel] raw-retry-final:", JSON.stringify(retryRaw).slice(0, 300));
+        const retryContent = parseRaw(retryRaw);
+        if (Array.isArray(retryContent?.trip_plans) && retryContent.trip_plans.length > 0) {
+          content.trip_plans = retryContent.trip_plans;
+        } else if (retryContent?.trip_plan) {
+          content.trip_plans = [retryContent.trip_plan];
+        }
+      }
+
+      console.log("[aimodel] trip_plans count:", content.trip_plans?.length ?? 0);
       content.resp = "I've prepared 3 itinerary options — pick the one you like best.";
       content.ui = "selectItinerary";
     }

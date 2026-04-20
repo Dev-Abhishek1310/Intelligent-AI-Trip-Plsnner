@@ -8,7 +8,7 @@ import { Activity, Itinerary } from './ChatBox';
 
 function GlobalMap() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null); // Keep map instance
+  const mapRef = useRef<mapboxgl.Map | null>(null);
   const { tripDetailInfo } = useTripDetail();
 
   useEffect(() => {
@@ -16,11 +16,10 @@ function GlobalMap() {
 
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_API_KEY || '';
 
-    // Create the map and store in ref
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-74.5, 40],
+      center: [0, 20],
       zoom: 2,
       projection: 'globe',
     });
@@ -28,7 +27,6 @@ function GlobalMap() {
     const bounds = new mapboxgl.LngLatBounds();
     const markers: mapboxgl.Marker[] = [];
 
-    // ✅ Loop through itinerary array
     tripDetailInfo?.itinerary?.forEach((day: Itinerary) => {
       day.activities?.forEach((activity: Activity) => {
         if (
@@ -36,36 +34,22 @@ function GlobalMap() {
           typeof activity.geo_coordinates.longitude === 'number' &&
           typeof activity.geo_coordinates.latitude === 'number'
         ) {
-          const marker = new mapboxgl.Marker({ color: 'red' })
-            .setLngLat([
-              activity.geo_coordinates.longitude,
-              activity.geo_coordinates.latitude,
-            ])
+          const marker = new mapboxgl.Marker({ color: '#ff4500' })
+            .setLngLat([activity.geo_coordinates.longitude, activity.geo_coordinates.latitude])
             .setPopup(new mapboxgl.Popup({ offset: 25 }).setText(activity.place_name))
             .addTo(mapRef.current!);
 
           markers.push(marker);
-
-          const coordinates: [number, number] = [
-            activity.geo_coordinates.longitude,
-            activity.geo_coordinates.latitude,
-          ];
-
-          // Animate to each activity
-          mapRef.current!.flyTo({
-            center: coordinates,
-            zoom: 8,
-            essential: true,
-          });
-
-          bounds.extend(coordinates);
+          bounds.extend([activity.geo_coordinates.longitude, activity.geo_coordinates.latitude]);
         }
       });
     });
 
-    if (!bounds.isEmpty()) {
-      mapRef.current.fitBounds(bounds, { padding: 50 });
-    }
+    mapRef.current.on('load', () => {
+      if (!bounds.isEmpty()) {
+        mapRef.current!.fitBounds(bounds, { padding: 60, maxZoom: 10 });
+      }
+    });
 
     return () => {
       markers.forEach((m) => m.remove());

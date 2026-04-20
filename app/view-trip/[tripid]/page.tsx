@@ -1,12 +1,14 @@
 'use client'
 
-import GlobalMap from '@/app/create-new-trip/_components/GlobalMap';
-import TripDetailView from './_components/TripDetailView';
+import dynamic from 'next/dynamic';
 import { useTripDetail, useUserDetail } from '@/app/provider';
 import { api } from '@/convex/_generated/api';
 import { useConvex } from 'convex/react';
 import { useParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import TripDetailView from './components/TripDetailView';
+
+const GlobalMap = dynamic(() => import('@/app/create-new-trip/_components/GlobalMap'), { ssr: false });
 
 function ViewTrip() {
   const { tripid } = useParams();
